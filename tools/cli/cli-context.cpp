@@ -40,13 +40,13 @@ static bool should_stop() {
 static constexpr size_t FILE_GLOB_MAX_RESULTS = 100;
 
 const char * LLAMA_ASCII_LOGO = R"(
-▄▄ ▄▄
-██ ██
-██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
-██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
-██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
-                                    ██    ██
-                                    ▀▀    ▀▀
+██████╗               ██████╗              
+██╔══██╗  ██╗ ██████╗ ██╔══██╗ ██╗  ██╗██████╗ 
+██████╔╝  ██║ ╚═██╔═╝ ██████╔╝ ██║  ██║██╔══██╗
+██╔══██╗  ██║   ██║   ██╔══██╗ ██║  ██║██║  ██║
+██████╔╝  ██║   ██║   ██║  ██║ ╚██████╔╝██║  ██║
+╚═════╝   ╚═╝   ╚═╝   ╚═╝  ╚═╝  ╚═════╝ ╚═╝  ╚═╝
+              The 1-Bit LLM Runtime
 )";
 
 // number of values an arg consumes on the command line
@@ -428,7 +428,7 @@ int cli_context::run() {
     banner += "\n";
     banner += LLAMA_ASCII_LOGO;
     banner += "\n";
-    banner += "build      : " + build_info + "\n";
+    banner += "engine     : BitRun Native Engine (" + build_info + ")\n";
     banner += "model      : " + model_name + "\n";
     if (!model_ftype.empty()) {
         banner += "ftype      : " + model_ftype + "\n";
