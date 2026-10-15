@@ -754,8 +754,13 @@ static struct gguf_context * gguf_init_from_reader(const struct gguf_reader & gr
             }
 
             // calculate byte offsets given the tensor shape and type
-            info.t.nb[0] = type_size;
-            info.t.nb[1] = info.t.nb[0]*(info.t.ne[0]/blck_size);
+            if (info.t.type == GGML_TYPE_I2_S) {
+                info.t.nb[0] = 1;
+                info.t.nb[1] = info.t.ne[0] / 4;
+            } else {
+                info.t.nb[0] = type_size;
+                info.t.nb[1] = info.t.nb[0]*(info.t.ne[0]/blck_size);
+            }
             for (int j = 2; j < GGML_MAX_DIMS; ++j) {
                 info.t.nb[j] = info.t.nb[j - 1]*info.t.ne[j - 1];
             }
@@ -789,6 +794,44 @@ static struct gguf_context * gguf_init_from_reader(const struct gguf_reader & gr
 
     // compute the total size of the data section, taking into account the alignment
     {
+        // Detect legacy Prism Q2_0 (group size 128) layout stored with type id 42 (GGML_TYPE_Q2_0)
+        bool is_legacy_q2_128 = false;
+        bool has_q2_0 = false;
+        size_t size_if_legacy_q2 = 0;
+        for (size_t i = 0; i < ctx->info.size(); ++i) {
+            const gguf_tensor_info & ti = ctx->info[i];
+            if (ti.t.type == GGML_TYPE_Q2_0) {
+                has_q2_0 = true;
+                const size_t nrows = ggml_nrows(&ti.t);
+                const size_t nbytes_legacy = ggml_row_size(GGML_TYPE_PQ2_0, ti.t.ne[0]) * nrows;
+                if (ti.offset == size_if_legacy_q2 && ti.offset != 0) {
+                    is_legacy_q2_128 = true;
+                }
+                size_if_legacy_q2 += GGML_PAD(nbytes_legacy, ctx->alignment);
+            } else {
+                if (has_q2_0 && ti.offset == size_if_legacy_q2) {
+                    is_legacy_q2_128 = true;
+                }
+                const size_t nbytes = ggml_nbytes(&ti.t);
+                size_if_legacy_q2 += GGML_PAD(nbytes, ctx->alignment);
+            }
+        }
+
+        if (has_q2_0 && is_legacy_q2_128) {
+            GGML_LOG_WARN("%s: detected legacy Prism group-128 Q2_0 format (stored as type 42). Automatically remapping to GGML_TYPE_PQ2_0.\n", __func__);
+            for (size_t i = 0; i < ctx->info.size(); ++i) {
+                gguf_tensor_info & ti = ctx->info[i];
+                if (ti.t.type == GGML_TYPE_Q2_0) {
+                    ti.t.type = GGML_TYPE_PQ2_0;
+                    ti.t.nb[0] = ggml_type_size(ti.t.type);
+                    ti.t.nb[1] = ggml_row_size(ti.t.type, ti.t.ne[0]);
+                    for (int j = 2; j < GGML_MAX_DIMS; ++j) {
+                        ti.t.nb[j] = ti.t.nb[j - 1] * ti.t.ne[j - 1];
+                    }
+                }
+            }
+        }
+
         ctx->size = 0;
         for (size_t i = 0; i < ctx->info.size(); ++i) {
             const gguf_tensor_info & ti = ctx->info[i];

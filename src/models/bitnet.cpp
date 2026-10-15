@@ -4,7 +4,9 @@ void llama_model_bitnet::load_arch_hparams(llama_model_loader & ml) {
     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
 
     switch (hparams.n_layer()) {
-        case 26: type = LLM_TYPE_3B; break;
+        case 24: type = LLM_TYPE_700M; break;
+        case 26: type = LLM_TYPE_3B;   break;
+        case 30: type = LLM_TYPE_2B;   break;
         default: type = LLM_TYPE_UNKNOWN;
     }
 }
@@ -129,7 +131,7 @@ llama_model_bitnet::graph::graph(const llama_model & model, const llm_graph_para
                 model.layers[il].ffn_gate, NULL, model.layers[il].ffn_gate_s,
                 NULL,                      NULL, NULL,
                 NULL,
-                LLM_FFN_SILU, LLM_FFN_PAR, il);
+                LLM_FFN_RELU_SQR, LLM_FFN_PAR, il);
         cb(cur, "ffn_sub_out", il);
 
         cur = build_norm(cur,

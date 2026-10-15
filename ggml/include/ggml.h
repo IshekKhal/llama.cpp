@@ -423,14 +423,16 @@ extern "C" {
         // GGML_TYPE_Q4_0_8_8 = 33,
         GGML_TYPE_TQ1_0   = 34,
         GGML_TYPE_TQ2_0   = 35,
-        // GGML_TYPE_IQ4_NL_4_4 = 36,
+        GGML_TYPE_I2_S    = 36, // Microsoft BitNet / Falcon3 packed 2-bit with 32-byte alignment scale tail
         // GGML_TYPE_IQ4_NL_4_8 = 37,
         // GGML_TYPE_IQ4_NL_8_8 = 38,
         GGML_TYPE_MXFP4   = 39, // MXFP4 (1 block)
         GGML_TYPE_NVFP4   = 40, // NVFP4 (4 blocks, E4M3 scale)
         GGML_TYPE_Q1_0    = 41,
         GGML_TYPE_Q2_0    = 42,
-        GGML_TYPE_COUNT   = 43,
+        // Prism group-128 Q2_0 (upstream Q2_0 is group 64). Sized to COUNT with 43..141 reserved.
+        GGML_TYPE_PQ2_0   = 142,
+        GGML_TYPE_COUNT   = 144,
     };
 
     // [TAG_GGML_PREC]
@@ -486,6 +488,8 @@ extern "C" {
         GGML_FTYPE_MOSTLY_NVFP4   = 26, // except 1d tensors
         GGML_FTYPE_MOSTLY_Q1_0    = 27, // except 1d tensors
         GGML_FTYPE_MOSTLY_Q2_0    = 28, // except 1d tensors
+        GGML_FTYPE_MOSTLY_PQ2_0   = 128, // except 1d tensors (Prism group-128 Q2_0)
+        GGML_FTYPE_MOSTLY_I2_S    = 129, // except 1d tensors (BitNet / Falcon3 I2_S)
     };
 
     // available tensor operations:

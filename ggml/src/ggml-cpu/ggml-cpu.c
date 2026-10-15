@@ -237,6 +237,18 @@ static const struct ggml_type_traits_cpu type_traits_cpu[GGML_TYPE_COUNT] = {
         .vec_dot_type             = GGML_TYPE_Q8_0,
         .nrows                    = 1,
     },
+    [GGML_TYPE_PQ2_0] = {
+        .from_float               = quantize_row_pq2_0,
+        .vec_dot                  = ggml_vec_dot_pq2_0_q8_K,
+        .vec_dot_type             = GGML_TYPE_Q8_K,
+        .nrows                    = 1,
+    },
+    [GGML_TYPE_I2_S] = {
+        .from_float               = quantize_row_i2_s,
+        .vec_dot                  = ggml_vec_dot_i2_s_q8_0,
+        .vec_dot_type             = GGML_TYPE_Q8_0,
+        .nrows                    = 1,
+    },
     [GGML_TYPE_Q4_0] = {
         .from_float               = quantize_row_q4_0,
         .vec_dot                  = ggml_vec_dot_q4_0_q8_0,
@@ -1242,6 +1254,18 @@ static void ggml_compute_forward_mul_mat_one_chunk(
 
                 for (int64_t ir0 = iir0; ir0 < iir0 + blck_0 && ir0 < ir0_end; ir0 += num_rows_per_vec_dot) {
                     vec_dot(ne00, &tmp[ir0 - iir0], (num_rows_per_vec_dot > 1 ? 16 : 0), src0_row + ir0 * nb01, (num_rows_per_vec_dot > 1 ? nb01 : 0), src1_col, (num_rows_per_vec_dot > 1 ? src1_col_stride : 0), num_rows_per_vec_dot);
+                }
+
+                if (src0->type == GGML_TYPE_I2_S) {
+                    const float * scale_ptr = (const float *)((const uint8_t *)src0->data + (src0->ne[0] * src0->ne[1] / 4));
+                    const float i2_scale = scale_ptr[0];
+                    const int count = (int)(MIN(iir0 + blck_0, ir0_end) - iir0);
+                    for (int cn = 0; cn < num_rows_per_vec_dot; ++cn) {
+                        float * t = tmp + (cn * 16);
+                        for (int k = 0; k < count; ++k) {
+                            t[k] *= i2_scale;
+                        }
+                    }
                 }
 
                 for (int cn = 0; cn < num_rows_per_vec_dot; ++cn) {
